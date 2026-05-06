@@ -16,6 +16,9 @@ dist-ssr
 *.local
 release
 
+# Bot directory (contains sensitive data)
+bot/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

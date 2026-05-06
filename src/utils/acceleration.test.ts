@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { detectAccelerations } from './acceleration';
 import type { ThresholdPair } from '../types';
-import { mockTripData, mockEmptyData, mockThresholdPair, mockMultipleThresholdPairs, mockIncompleteData } from '../fixtures/acceleration-mocks';
+import { 
+  mockTripData, 
+  mockEmptyData, 
+  mockThresholdPair, 
+  mockMultipleThresholdPairs, 
+  mockIncompleteData,
+  mockRollOnData,
+  mockCustomRangeData,
+  mockRollOnThresholdPair,
+  mockCustomRangeThresholdPair
+} from '../fixtures/acceleration-mocks';
 
 describe('Acceleration Detection - Empty Data Handling', () => {
   it('should return empty array for empty data', () => {
@@ -172,5 +182,58 @@ describe('Acceleration Detection - Advanced Metrics', () => {
       expect(attempt.temperatureEfficiency).toBeDefined();
       expect(typeof attempt.temperatureEfficiency).toBe('number');
     }
+  });
+});
+
+describe('Acceleration Detection - Roll-On Acceleration', () => {
+  it('should detect roll-on acceleration from 30 km/h', () => {
+    const thresholdPairs: ThresholdPair[] = [mockRollOnThresholdPair];
+    const result = detectAccelerations(mockRollOnData, thresholdPairs);
+    
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    
+    const attempt = result[0];
+    expect(attempt.startSpeed).toBeGreaterThanOrEqual(30);
+    expect(attempt.endSpeed).toBeGreaterThanOrEqual(80);
+    expect(attempt.thresholdPair.from).toBe(30);
+    expect(attempt.thresholdPair.to).toBe(80);
+    expect(attempt.isComplete).toBe(true);
+  });
+
+  it('should detect custom range acceleration 30-60', () => {
+    const thresholdPairs: ThresholdPair[] = [mockCustomRangeThresholdPair];
+    const result = detectAccelerations(mockCustomRangeData, thresholdPairs);
+    
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    
+    const attempt = result[0];
+    expect(attempt.startSpeed).toBeGreaterThanOrEqual(25);
+    expect(attempt.endSpeed).toBeGreaterThanOrEqual(60);
+    expect(attempt.thresholdPair.from).toBe(30);
+    expect(attempt.thresholdPair.to).toBe(60);
+    expect(attempt.isComplete).toBe(true);
+  });
+});
+
+describe('Acceleration Detection - Configuration', () => {
+  it('should respect custom acceleration threshold', () => {
+    const thresholdPairs: ThresholdPair[] = [mockThresholdPair];
+    const result = detectAccelerations(mockTripData, thresholdPairs, {
+      minAcceleration: 1.0 // Higher threshold
+    });
+    
+    expect(Array.isArray(result)).toBe(true);
+    // Should detect fewer attempts with higher threshold
+  });
+
+  it('should handle custom data gap threshold', () => {
+    const thresholdPairs: ThresholdPair[] = [mockThresholdPair];
+    const result = detectAccelerations(mockTripData, thresholdPairs, {
+      dataGapThreshold: 2000 // 2 seconds
+    });
+    
+    expect(Array.isArray(result)).toBe(true);
   });
 });

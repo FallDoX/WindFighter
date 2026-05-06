@@ -8,6 +8,7 @@ import {
 } from 'chart.js';
 import { Scatter } from 'react-chartjs-2';
 import type { TripEntry } from '../types';
+import { i18n } from '../i18n';
 
 ChartJS.register(LinearScale, PointElement, Tooltip, Legend);
 
@@ -51,10 +52,10 @@ const METRICS: MetricConfig[] = [
 ];
 
 // Get color for value based on min/max range (blue -> green -> yellow -> red)
-function getColorForValue(value: number, min: number, max: number): string {
+function getColorForValue(value: number, min?: number, max?: number): string {
   if (max === min) return '#3b82f6'; // Default blue
   
-  const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const normalized = Math.max(0, Math.min(1, (value - (min || 0)) / ((max || 1) - (min || 0))));
   
   // Blue (0, 0.4, 0.8) -> Cyan (0, 0.8, 0.8) -> Green (0, 0.8, 0) -> Yellow (0.8, 0.8, 0) -> Red (0.8, 0, 0)
   if (normalized < 0.25) {
@@ -95,7 +96,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
     if (data.length === 0) return METRICS;
     
     return METRICS.filter(m => {
-      const firstValue = data[0][m.key];
+      const firstValue = data[0]?.[m.key as keyof TripEntry];
       return firstValue !== undefined && firstValue !== null;
     });
   }, [data]);
@@ -108,14 +109,14 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
     const colorConfig = METRICS.find(m => m.key === colorMetric)!;
 
     // Calculate min/max for color normalization
-    const colorValues = downsampledData.map(d => d[colorMetric] || 0);
+    const colorValues = downsampledData.map(d => Number(d[colorMetric as keyof TripEntry]) || 0);
     const colorMin = Math.min(...colorValues);
     const colorMax = Math.max(...colorValues);
 
-    const points = downsampledData.map(entry => ({
-      x: entry[xAxis] || 0,
-      y: entry[yAxis] || 0,
-      colorValue: entry[colorMetric] || 0,
+    const points = downsampledData.map(d => ({
+      x: Number(d[xAxis as keyof TripEntry]) || 0,
+      y: Number(d[yAxis as keyof TripEntry]) || 0,
+      colorValue: Number(d[colorMetric as keyof TripEntry]) || 0,
     }));
 
     return {
@@ -146,7 +147,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
           display: true,
           text: `${xConfig.label} (${xConfig.unit})`,
           color: 'rgba(255, 255, 255, 0.7)',
-          font: { size: 12, weight: '500' },
+          font: { size: 12, weight: 500 as any },
         },
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
         ticks: { color: 'rgba(255, 255, 255, 0.5)' },
@@ -158,7 +159,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
           display: true,
           text: `${yConfig.label} (${yConfig.unit})`,
           color: 'rgba(255, 255, 255, 0.7)',
-          font: { size: 12, weight: '500' },
+          font: { size: 12, weight: 500 as any },
         },
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
         ticks: { color: 'rgba(255, 255, 255, 0.5)' },
@@ -175,8 +176,8 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
         padding: 12,
         cornerRadius: 8,
         callbacks: {
-          label: (context: { raw: { x: number; y: number; colorValue: number } }) => {
-            const point = context.raw;
+          label: (context: any) => {
+            const point = context.raw as { x: number; y: number; colorValue: number };
             return [
               `${xConfig.label}: ${point.x.toFixed(2)} ${xConfig.unit}`,
               `${yConfig.label}: ${point.y.toFixed(2)} ${yConfig.unit}`,
@@ -201,12 +202,12 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
       {/* Axis Selectors */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Ось X:</span>
+          <span className="text-sm text-slate-400">{i18n['axisX']}:</span>
           <select
             value={xAxis}
             onChange={(e) => setXAxis(e.target.value as MetricKey)}
             className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            title="Ось X"
+            title={i18n['axisX']}
           >
             {availableMetrics.map(m => (
               <option key={m.key} value={m.key} className="bg-slate-900">{m.label}</option>
@@ -215,12 +216,12 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Ось Y:</span>
+          <span className="text-sm text-slate-400">{i18n['axisY']}:</span>
           <select
             value={yAxis}
             onChange={(e) => setYAxis(e.target.value as MetricKey)}
             className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            title="Ось Y"
+            title={i18n['axisY']}
           >
             {availableMetrics.map(m => (
               <option key={m.key} value={m.key} className="bg-slate-900">{m.label}</option>
@@ -229,12 +230,12 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Цвет:</span>
+          <span className="text-sm text-slate-400">{i18n['color']}:</span>
           <select
             value={colorMetric}
             onChange={(e) => setColorMetric(e.target.value as MetricKey)}
             className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            title="Цвет"
+            title={i18n['colorScale']}
           >
             {availableMetrics.map(m => (
               <option key={m.key} value={m.key} className="bg-slate-900">{m.label}</option>
@@ -245,7 +246,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
 
       {/* Chart */}
       <div className="h-[400px] w-full">
-        <Scatter options={options as any} data={scatterData as any} />
+        <Scatter options={options} data={scatterData} />
       </div>
 
       {/* Color Legend */}
@@ -254,7 +255,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-500" />
-              <span className="text-sm font-medium text-white/90">Цветовая шкала</span>
+              <span className="text-sm font-medium text-white/90">{i18n['color']}</span>
             </div>
             <span className="text-xs text-slate-400">{scatterData.colorRange.label} ({scatterData.colorRange.unit})</span>
           </div>
@@ -263,7 +264,7 @@ export function ScatterPlot({ data }: ScatterPlotProps) {
               <div
                 key={i}
                 className="flex-1 h-4 rounded-sm transition-all hover:h-5"
-                style={{ backgroundColor: getColorForValue(value, scatterData.colorRange!.min, scatterData.colorRange!.max) }}
+                style={{ backgroundColor: getColorForValue(value, scatterData.colorRange?.min, scatterData.colorRange?.max) }}
               />
             ))}
           </div>

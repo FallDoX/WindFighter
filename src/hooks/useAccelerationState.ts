@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { detectAccelerations } from '../utils/acceleration';
+import { detectAccelerations, type AccelerationConfig } from '../utils/acceleration';
 import type { TripEntry, ThresholdPair } from '../types';
 
 /**
@@ -10,6 +10,7 @@ import type { TripEntry, ThresholdPair } from '../types';
  * - Column selection for display
  * - Incomplete attempt filtering
  * - Acceleration detection from telemetry data
+ * - Speed source selection (GPS/Wheel)
  * - localStorage persistence of settings
  *
  * @param data - Array of telemetry entries for acceleration detection
@@ -17,7 +18,7 @@ import type { TripEntry, ThresholdPair } from '../types';
  *
  * @example
  * ```typescript
- * const { accelerationAttempts, showIncomplete, setShowIncomplete } = useAccelerationState(tripData);
+ * const { accelerationAttempts, showIncomplete, setShowIncomplete, speedSource, setSpeedSource } = useAccelerationState(tripData);
  * ```
  */
 export function useAccelerationState(data: TripEntry[]) {
@@ -86,10 +87,94 @@ export function useAccelerationState(data: TripEntry[]) {
     }
   });
 
+  // Initialize speedSource from localStorage with lazy initialization
+  const [speedSource, setSpeedSource] = useState<'gps' | 'wheel'>(() => {
+    try {
+      const saved = localStorage.getItem('speed_source');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return 'wheel'; // Default to wheel speed
+    } catch {
+      return 'wheel';
+    }
+  });
+
+  // Initialize speed correction settings from localStorage
+  const [speedCorrection, setSpeedCorrection] = useState(() => {
+    try {
+      const saved = localStorage.getItem('speed_correction');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return {
+        enabled: false,
+        coefficient: 1.0, // Correction coefficient
+        wheelError: 0, // Percentage error
+      };
+    } catch {
+      return {
+        enabled: false,
+        coefficient: 1.0,
+        wheelError: 0,
+      };
+    }
+  });
+
+  // Initialize detectionConfig from localStorage with lazy initialization
+  const [detectionConfig, setDetectionConfig] = useState<AccelerationConfig>(() => {
+    try {
+      const saved = localStorage.getItem('detection_config');
+      if (saved) {
+        const config = JSON.parse(saved);
+        // Check if old config with higher thresholds - update to new sensitive defaults
+        if (config.minAcceleration >= 0.5 || config.minSpeedChange >= 3 || config.dataGapThreshold < 1000) {
+          // Clear old config and use new defaults
+          localStorage.removeItem('detection_config');
+        } else {
+          return config;
+        }
+      }
+      // Return updated default config with more sensitive parameters
+      return {
+        minAcceleration: 0.2, // 0.2 m/s² ≈ 0.72 km/h/s - более чувствительно к плавным разгонам
+        dataGapThreshold: 2000, // 2000 ms - менее чувствительно к мелким разрывам
+        minSpeedChange: 1, // 1 km/h minimum change - более чувствительно
+        maxDeceleration: -1.5, // -1.5 m/s² for braking detection
+        minAttemptDuration: 2000, // 2 seconds minimum
+        maxAttemptDuration: 30000, // 30 seconds maximum
+        minDistance: 5, // 5 meters minimum
+        minPeakPower: 300, // 300 watts minimum - ниже порог для плавных разгонов
+        powerConsistencyThreshold: 0.4, // 40% consistency minimum - менее строго
+      };
+    } catch {
+      return {
+        minAcceleration: 0.2, // 0.2 m/s² ≈ 0.72 км/ч/с - более чувствительно к плавным разгонам
+        dataGapThreshold: 2000, // 2000 ms - менее чувствительно к мелким разрывам
+        minSpeedChange: 1, // 1 km/h minimum change - более чувствительно
+        maxDeceleration: -1.5, // -1.5 m/s² for braking detection
+        minAttemptDuration: 2000, // 2 seconds minimum
+        maxAttemptDuration: 30000, // 30 seconds maximum
+        minDistance: 5, // 5 meters minimum
+        minPeakPower: 300, // 300 watts minimum - ниже порог для плавных разгонов
+        powerConsistencyThreshold: 0.4, // 40% consistency minimum - менее строго
+      };
+    }
+  });
+
   // Memoize acceleration detection to prevent re-detection on unnecessary re-renders
   const accelerationAttempts = useMemo(() => {
-    return detectAccelerations(data, thresholdPairs);
-  }, [data, thresholdPairs]);
+    console.log('🔍 useAccelerationState: Запуск детекции');
+    console.log('   📊 Данных:', data.length);
+    console.log('   🎯 Диапазоны:', thresholdPairs);
+    console.log('   ⚙️ Конфиг:', detectionConfig);
+    
+    const attempts = detectAccelerations(data, thresholdPairs, detectionConfig, speedSource, speedCorrection.enabled ? speedCorrection : undefined);
+    
+    console.log('🚀 useAccelerationState: Найдено попыток:', attempts.length);
+    
+    return attempts;
+  }, [data, thresholdPairs, detectionConfig, speedSource, speedCorrection.enabled, speedCorrection.coefficient]);
 
   // Persist thresholdPairs to localStorage
   useEffect(() => {
@@ -128,6 +213,33 @@ export function useAccelerationState(data: TripEntry[]) {
     }
   }, [temperatureThreshold]);
 
+  // Persist speedSource to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('speed_source', JSON.stringify(speedSource));
+    } catch {
+      // Silent fail - localStorage unavailable
+    }
+  }, [speedSource]);
+
+  // Persist speed correction to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('speed_correction', JSON.stringify(speedCorrection));
+    } catch {
+      // Silent fail - localStorage unavailable
+    }
+  }, [speedCorrection]);
+
+  // Persist detectionConfig to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('detection_config', JSON.stringify(detectionConfig));
+    } catch {
+      // Silent fail - localStorage unavailable
+    }
+  }, [detectionConfig]);
+
   // Clear settings function
   const clearSettings = (): boolean => {
     try {
@@ -136,6 +248,9 @@ export function useAccelerationState(data: TripEntry[]) {
       localStorage.removeItem('acceleration_selected_columns');
       localStorage.removeItem('power_threshold'); // Plan 7.8
       localStorage.removeItem('temperature_threshold'); // Plan 7.8
+      localStorage.removeItem('speed_source');
+      localStorage.removeItem('speed_correction');
+      localStorage.removeItem('detection_config');
       return true;
     } catch {
       return false;
@@ -155,6 +270,12 @@ export function useAccelerationState(data: TripEntry[]) {
     setPowerThreshold, // Plan 7.8
     temperatureThreshold, // Plan 7.8
     setTemperatureThreshold, // Plan 7.8
+    speedSource,
+    setSpeedSource,
+    speedCorrection,
+    setSpeedCorrection,
+    detectionConfig,
+    setDetectionConfig,
   };
 }
 

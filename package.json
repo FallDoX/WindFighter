@@ -27,7 +27,6 @@
   "dependencies": {
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@types/leaflet": "^1.9.21",
-    "canvas": "^3.2.3",
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-zoom": "^2.2.0",
@@ -36,7 +35,6 @@
     "date-fns": "^4.1.0",
     "hammerjs": "^2.0.8",
     "html-to-image": "^1.11.13",
-    "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.8.0",
     "papaparse": "^5.5.3",

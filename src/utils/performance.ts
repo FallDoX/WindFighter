@@ -6,7 +6,7 @@
  * @param wait Wait time in milliseconds
  * @returns Throttled function
  */
-export function throttle<T extends (...args: any[]) => void>(
+export function throttle<T extends (...args: Parameters<T>) => void>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -40,7 +40,7 @@ export function throttle<T extends (...args: any[]) => void>(
  * @param wait Wait time in milliseconds
  * @returns Debounced function
  */
-export function debounce<T extends (...args: any[]) => void>(
+export function debounce<T extends (...args: Parameters<T>) => void>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -61,7 +61,7 @@ export function debounce<T extends (...args: any[]) => void>(
  * @param func Function to memoize
  * @returns Memoized function
  */
-export function memoize<T extends (...args: any[]) => any>(
+export function memoize<T extends (...args: Parameters<T>) => ReturnType<T>>(
   func: T
 ): (...args: Parameters<T>) => ReturnType<T> {
   const cache = new Map<string, ReturnType<T>>();

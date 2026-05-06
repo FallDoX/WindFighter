@@ -1,135 +1,16 @@
 import { memo, useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale,
-  Filler,
   type ChartOptions,
   type ChartData,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { downsample } from '../utils/parser';
+import { registerChartComponents, clampZoomBounds } from '../utils/chart-shared';
 
-// Vertical cursor line plugin for chart hover - like in App.tsx
-const verticalCursorPlugin = {
-  id: 'verticalCursor',
-  afterInit: (chart: any) => {
-    chart.verticalCursor = { x: null, visible: false, lastX: null };
-    chart.measurementPoints = { a: null, b: null };
-  },
-  afterEvent: (chart: any, args: any) => {
-    if (!chart.verticalCursor) {
-      chart.verticalCursor = { x: null, visible: false, lastX: null };
-    }
-    if (!chart.measurementPoints) {
-      chart.measurementPoints = { a: null, b: null };
-    }
-    if (chart.verticalCursor) {
-      if (args.event.x && args.event.type === 'mousemove') {
-        const newX = args.event.x;
-        if (newX !== chart.verticalCursor.lastX) {
-          chart.verticalCursor.x = newX;
-          chart.verticalCursor.lastX = newX;
-          chart.verticalCursor.visible = true;
-          chart.draw('none');
-        }
-      } else if (args.event.type === 'mouseout') {
-        if (chart.verticalCursor.visible) {
-          chart.verticalCursor.visible = false;
-          chart.draw('none');
-        }
-      }
-    }
-  },
-  afterDraw: (chart: any) => {
-    const ctx = chart.ctx;
-    const chartArea = chart.chartArea;
-
-    // Draw vertical cursor line
-    if (!chart.verticalCursor || !chart.verticalCursor.visible || chart.verticalCursor.x === null) return;
-
-    const x = chart.verticalCursor.x;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x, chartArea.top);
-    ctx.lineTo(x, chartArea.bottom);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
-    ctx.stroke();
-    ctx.restore();
-
-    // Draw measurement points
-    if (chart.measurementPoints) {
-      const { a, b } = chart.measurementPoints;
-
-      // Draw point A (red)
-      if (a) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.font = '12px sans-serif';
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('A', a.x - 4, a.y - 10);
-        ctx.restore();
-      }
-
-      // Draw point B (blue)
-      if (b) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(59, 130, 246, 1)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.font = '12px sans-serif';
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillText('B', b.x - 4, b.y - 10);
-        ctx.restore();
-      }
-
-      // Draw line between A and B
-      if (a && b) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
-        ctx.setLineDash([5, 5]);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-  },
-};
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale,
-  Filler,
-  verticalCursorPlugin
-);
+// Register ChartJS components once via shared utility
+registerChartComponents();
 
 export interface TimelineMarker {
   id: string;
@@ -267,7 +148,7 @@ export const ChartWithZoom = memo(({
       if (!dataset.data || dataset.data.length === 0) return dataset;
 
       const downsampledData = downsample(
-        dataset.data as any[],
+        dataset.data,
         500, // Same limit as App.tsx
         currentTimeRange
       );
@@ -320,31 +201,8 @@ export const ChartWithZoom = memo(({
     newMin = center - range / 2;
     newMax = center + range / 2;
 
-    // Clamp to bounds
-    if (newMin < timeRange.start) {
-      newMax += (timeRange.start - newMin);
-      newMin = timeRange.start;
-    }
-    if (newMax > timeRange.end) {
-      newMin -= (newMax - timeRange.end);
-      newMax = timeRange.end;
-    }
-
-    // Min range check
-    if (newMax - newMin < 0.5) {
-      const c = (newMin + newMax) / 2;
-      newMin = c - 0.25;
-      newMax = c + 0.25;
-    }
-
-    // Max range limit
-    const totalRange = timeRange.end - timeRange.start;
-    if (newMax - newMin > totalRange) {
-      newMin = timeRange.start;
-      newMax = timeRange.end;
-    }
-
-    setChartZoom({ min: newMin, max: newMax });
+    const clamped = clampZoomBounds(newMin, newMax, timeRange.start, timeRange.end, 0.5);
+    setChartZoom(clamped);
   }, [timeRange]);
 
   const handleChartMouseMove = useCallback(handleChartMouseMoveRaw, [handleChartMouseMoveRaw]);
@@ -382,31 +240,8 @@ export const ChartWithZoom = memo(({
     let newMin = mouseTime - (mouseTime - currentMin) * zoomFactor;
     let newMax = mouseTime + (currentMax - mouseTime) * zoomFactor;
 
-    // Clamp to bounds
-    if (newMin < timeRange.start) {
-      newMax += (timeRange.start - newMin);
-      newMin = timeRange.start;
-    }
-    if (newMax > timeRange.end) {
-      newMin -= (newMax - timeRange.end);
-      newMax = timeRange.end;
-    }
-
-    // Min range check
-    if (newMax - newMin < 0.5) {
-      const c = (newMin + newMax) / 2;
-      newMin = c - 0.25;
-      newMax = c + 0.25;
-    }
-
-    // Max range limit
-    const totalRange = timeRange.end - timeRange.start;
-    if (newMax - newMin > totalRange) {
-      newMin = timeRange.start;
-      newMax = timeRange.end;
-    }
-
-    setChartZoom({ min: newMin, max: newMax });
+    const clamped = clampZoomBounds(newMin, newMax, timeRange.start, timeRange.end, 0.5);
+    setChartZoom(clamped);
   }, [timeRange, chartZoom]);
 
   const handleChartWheel = useCallback(handleChartWheelRaw, [handleChartWheelRaw]);

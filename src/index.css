@@ -6,6 +6,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide Leaflet attribution */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
 :root {
   font-family: 'Geist Mono Variable', monospace;
   line-height: 1.5;

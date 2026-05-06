@@ -62,3 +62,27 @@ export const mockAccelerationAttempt: AccelerationAttempt = {
   temperaturePowerCorrelation: 0.9,
   temperatureEfficiency: 0.85,
 };
+
+// Roll-on acceleration data (starting from 30 km/h)
+export const mockRollOnData: TripEntry[] = [
+  { timestamp: 0, Speed: 30, Power: 1000, Current: 20, Voltage: 48, BatteryLevel: 95, Temperature: 25, PWM: 20, TotalDistance: 100, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 1000, Speed: 35, Power: 2000, Current: 40, Voltage: 48, BatteryLevel: 94.8, Temperature: 25.2, PWM: 40, TotalDistance: 110, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 2000, Speed: 45, Power: 4000, Current: 80, Voltage: 48, BatteryLevel: 94.4, Temperature: 25.6, PWM: 60, TotalDistance: 125, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 3000, Speed: 55, Power: 6000, Current: 120, Voltage: 48, BatteryLevel: 93.8, Temperature: 26.0, PWM: 80, TotalDistance: 145, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 4000, Speed: 65, Power: 7000, Current: 140, Voltage: 48, BatteryLevel: 93.2, Temperature: 26.4, PWM: 90, TotalDistance: 170, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 5000, Speed: 75, Power: 8000, Current: 160, Voltage: 48, BatteryLevel: 92.4, Temperature: 26.8, PWM: 100, TotalDistance: 200, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 6000, Speed: 80, Power: 8500, Current: 170, Voltage: 48, BatteryLevel: 91.8, Temperature: 27.0, PWM: 110, TotalDistance: 230, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+];
+
+// Custom range data (30-60 km/h)
+export const mockCustomRangeData: TripEntry[] = [
+  { timestamp: 0, Speed: 25, Power: 800, Current: 15, Voltage: 48, BatteryLevel: 98, Temperature: 24, PWM: 15, TotalDistance: 50, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 1000, Speed: 30, Power: 1500, Current: 30, Voltage: 48, BatteryLevel: 97.8, Temperature: 24.5, PWM: 25, TotalDistance: 58, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 2000, Speed: 40, Power: 3000, Current: 60, Voltage: 48, BatteryLevel: 97.4, Temperature: 25.0, PWM: 45, TotalDistance: 72, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 3000, Speed: 50, Power: 5000, Current: 100, Voltage: 48, BatteryLevel: 96.8, Temperature: 25.5, PWM: 65, TotalDistance: 92, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 4000, Speed: 60, Power: 6000, Current: 120, Voltage: 48, BatteryLevel: 96.2, Temperature: 26.0, PWM: 75, TotalDistance: 118, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+  { timestamp: 5000, Speed: 65, Power: 4000, Current: 80, Voltage: 48, BatteryLevel: 95.8, Temperature: 26.2, PWM: 50, TotalDistance: 140, GPSSpeed: null, Latitude: null, Longitude: null, Altitude: null },
+];
+
+export const mockRollOnThresholdPair: ThresholdPair = { from: 30, to: 80 };
+export const mockCustomRangeThresholdPair: ThresholdPair = { from: 30, to: 60 };
