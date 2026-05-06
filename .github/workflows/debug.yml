@@ -1,0 +1,40 @@
+name: Debug Build
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        run: |
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "Working directory: $(pwd)"
+          echo "Files in root:"
+          ls -la
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit --version
+
+      - name: Try build
+        run: npm run build
+
+      - name: Show build output
+        run: |
+          echo "Build completed successfully!"
+          echo "Dist directory contents:"
+          ls -la dist/
