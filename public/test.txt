@@ -1,0 +1,2 @@
+WindFighter Telemetry App - Test Page
+Deployment test timestamp: 2026-05-06 15:24
