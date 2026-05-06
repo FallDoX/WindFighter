@@ -1420,20 +1420,7 @@ function App() {
             
             {/* Trip Data Section - Overview and Telemetry */}
             <div className="space-y-4 md:space-y-6">
-              {showMap && hasGPSData && (
-                <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg">
-                  <div className="p-4 border-b border-white/10">
-                    <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-blue-400" />
-                      GPS Трек
-                    </h3>
-                  </div>
-                  <div className="p-4">
-                    <GPSMap data={data} currentTime={currentTime} height="300px" />
-                  </div>
-                </div>
-              )}
-              <TripOverview 
+                            <TripOverview 
                 summary={filteredSummary!}
                 visibleMetrics={visibleMetrics}
                 onVisibleMetricsChange={(key) => setVisibleMetrics(prev => ({ ...prev, [key]: !prev[key] }))}
@@ -1455,6 +1442,20 @@ function App() {
                 }}
                 onShare={handleShareStats}
               />
+
+              {showMap && hasGPSData && (
+                <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg">
+                  <div className="p-4 border-b border-white/10">
+                    <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-blue-400" />
+                      GPS Трек
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    <GPSMap data={data} currentTime={currentTime} height="300px" />
+                  </div>
+                </div>
+              )}
 
               {/* Main Chart with Built-in Time Range & Zoom */}
               <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg">
