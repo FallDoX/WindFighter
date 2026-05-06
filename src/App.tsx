@@ -228,6 +228,10 @@ function App() {
   // Panels visibility
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
 
+  // Unified settings dropdown state
+  const [showUnifiedSettings, setShowUnifiedSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'processing' | 'visualization'>('processing');
+
   // Time filter state
   const [timeFilter, setTimeFilter] = useState<{ startTime: string; endTime: string } | null>(null);
 
@@ -1474,205 +1478,129 @@ function App() {
 
                   {/* Chart Controls - grouped by function */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    {/* Data Processing Group */}
+                    {/* Unified Settings Group */}
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-xl border border-white/5">
                       <div className="relative">
                         <button
-                          onClick={() => setFilterConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+                          onClick={() => setShowUnifiedSettings(prev => !prev)}
                           className={cn(
                             "px-4 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 border flex items-center gap-2 min-h-[44px]",
-                            (filterConfig.enabled || hideIdlePeriods)
-                              ? "bg-emerald-500/30 border-emerald-500/60 text-emerald-200"
+                            (filterConfig.enabled || hideIdlePeriods || showTelemetryToggles)
+                              ? "bg-blue-500/30 border-blue-500/60 text-blue-200"
                               : "bg-slate-700/50 border-slate-600 text-slate-400 hover:bg-slate-700"
                           )}
-                          title="Обработка данных: фильтр аномалий и скрытие простоев"
+                          title="Настройки: обработка данных, фильтрация аномалий, отображение графиков"
                         >
-                          <Settings className="w-4 h-4" />
-                          <span className="hidden sm:inline">Обработка данных</span>
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowFilterDropdown(prev => !prev);
-                            }}
-                            className={cn(
-                              "p-2 rounded-lg hover:bg-white/10 transition-colors ml-1 cursor-pointer",
-                              showFilterDropdown && "bg-white/10"
-                            )}
-                            title="Настройки фильтра"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </div>
-                        </button>
-                        {showFilterDropdown && (
-                          <div className="absolute top-full left-0 mt-2 w-96 bg-slate-900/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-xl z-50 p-5 space-y-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Settings className="w-4 h-4 text-slate-400" />
-                                <span className="text-sm font-semibold text-slate-200">Настройки обработки</span>
-                              </div>
-                              <p className="text-xs text-slate-400 leading-relaxed">
-                                Управление фильтрацией аномалий и скрытием периодов простоя.
-                              </p>
-                            </div>
-
-                            {/* Hide Idle Periods Toggle */}
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-white/5">
-                              <div className="flex items-center gap-2">
-                                <Clock className={cn("w-4 h-4", hideIdlePeriods ? "text-emerald-400" : "text-slate-400")} />
-                                <div>
-                                  <span className="text-xs font-medium text-slate-200">Скрыть простои</span>
-                                  <p className="text-[10px] text-slate-500">Убирает стоянки (скорость &lt;5 км/ч &gt;30 сек)</p>
-                                </div>
-                              </div>
+                          <Settings className={cn("w-4 h-4 transition-transform duration-200", showUnifiedSettings ? "rotate-180" : "")} />
+                          <span className="hidden sm:inline">Настройки</span>
+                          </button>
+                        {showUnifiedSettings && (
+                          <div className="absolute top-full left-0 mt-2 w-[28rem] bg-slate-900/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-xl z-50">
+                            {/* Tab Headers */}
+                            <div className="flex border-b border-white/10">
                               <button
-                                onClick={() => setHideIdlePeriods(prev => !prev)}
+                                onClick={() => setSettingsTab('processing')}
                                 className={cn(
-                                  "relative w-11 h-6 rounded-full transition-colors duration-200",
-                                  hideIdlePeriods ? "bg-emerald-500" : "bg-slate-600"
+                                  "flex-1 px-3 py-2.5 text-xs font-medium transition-colors",
+                                  settingsTab === 'processing'
+                                    ? "text-blue-200 bg-blue-500/20 border-b-2 border-blue-400"
+                                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                                 )}
-                                aria-label="Скрыть простои"
                               >
-                                <span
-                                  className={cn(
-                                    "absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200",
-                                    hideIdlePeriods ? "translate-x-5" : "translate-x-0"
-                                  )}
-                                />
+                                <Activity className="w-3.5 h-3.5 inline mr-1.5" />
+                                Обработка
+                              </button>
+                              <button
+                                onClick={() => setSettingsTab('visualization')}
+                                className={cn(
+                                  "flex-1 px-3 py-2.5 text-xs font-medium transition-colors",
+                                  settingsTab === 'visualization'
+                                    ? "text-blue-200 bg-blue-500/20 border-b-2 border-blue-400"
+                                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                                )}
+                              >
+                                <BarChart className="w-3.5 h-3.5 inline mr-1.5" />
+                                Графики
                               </button>
                             </div>
 
-                            {/* Filter Enabled Toggle */}
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-white/5">
-                              <div className="flex items-center gap-2">
-                                <Activity className={cn("w-4 h-4", filterConfig.enabled ? "text-emerald-400" : "text-slate-400")} />
-                                <div>
-                                  <span className="text-xs font-medium text-slate-200">Фильтр аномалий</span>
-                                  <p className="text-[10px] text-slate-500">Удаляет скачки GPS и разрывы времени</p>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => setFilterConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
-                                className={cn(
-                                  "relative w-11 h-6 rounded-full transition-colors duration-200",
-                                  filterConfig.enabled ? "bg-emerald-500" : "bg-slate-600"
-                                )}
-                                aria-label="Фильтр данных"
-                              >
-                                <span
-                                  className={cn(
-                                    "absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200",
-                                    filterConfig.enabled ? "translate-x-5" : "translate-x-0"
-                                  )}
-                                />
-                              </button>
-                            </div>
-                            {filterConfig.enabled && (
-                              <>
+                            {/* Tab Content */}
+                            <div className="p-4 max-h-[50vh] overflow-y-auto">
+                              {settingsTab === 'processing' && (
                                 <div className="space-y-3">
-                                  <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                      <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                        <Clock className="w-3.5 h-3.5 text-amber-400" />
-                                        Разрыв времени
-                                      </label>
-                                      <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                                        {filterConfig.maxTimeGapSeconds} сек
-                                      </span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 mb-2">
-                                      Максимальный разрыв между точками данных. Разрывы больше этого значения считаются аномальными и удаляются.
-                                    </p>
-                                    <div className="relative">
-                                      <input
-                                        type="range"
-                                        min="1"
-                                        max="60"
-                                        value={filterConfig.maxTimeGapSeconds}
-                                        onChange={(e) => setFilterConfig(prev => ({ ...prev, maxTimeGapSeconds: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                        aria-label="Максимальный разрыв времени в секундах"
-                                      />
-                                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                                        <span>1с</span>
-                                        <span>60с</span>
+                                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-white/5">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className={cn("w-4 h-4", hideIdlePeriods ? "text-emerald-400" : "text-slate-400")} />
+                                      <div>
+                                        <span className="text-xs font-medium text-slate-200">Скрыть простои</span>
+                                        <p className="text-[10px] text-slate-500">Убирает стоянки</p>
                                       </div>
                                     </div>
+                                    <button
+                                      onClick={() => setHideIdlePeriods(prev => !prev)}
+                                      className={cn(
+                                        "relative w-10 h-5 rounded-full transition-colors duration-200",
+                                        hideIdlePeriods ? "bg-emerald-500" : "bg-slate-600"
+                                      )}
+                                    >
+                                      <span
+                                        className={cn(
+                                          "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200",
+                                          hideIdlePeriods ? "translate-x-5" : "translate-x-0"
+                                        )}
+                                      />
+                                    </button>
                                   </div>
-                                  {displayData[0]?.GPSSpeed !== undefined && (
-                                    <div>
-                                      <div className="flex justify-between items-center mb-2">
-                                        <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                          <Activity className="w-3.5 h-3.5 text-red-400" />
-                                          GPS скорость лимит
-                                        </label>
-                                        <span className="text-xs font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
-                                          {filterConfig.gpsTeleportSpeedKmh} км/ч
-                                        </span>
-                                      </div>
-                                      <p className="text-[10px] text-slate-500 mb-2">
-                                        Максимальная допустимая скорость GPS. Скачки скорости выше этого значения считаются аномалиями (телепортациями) и удаляются.
-                                      </p>
-                                      <div className="relative">
-                                        <input
-                                          type="range"
-                                          min="0"
-                                          max="500"
-                                          step="5"
-                                          value={filterConfig.gpsTeleportSpeedKmh}
-                                          onChange={(e) => setFilterConfig(prev => ({ ...prev, gpsTeleportSpeedKmh: parseInt(e.target.value) }))}
-                                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500"
-                                          aria-label="Лимит GPS скорости в км/ч"
-                                        />
-                                        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                                          <span>0</span>
-                                          <span>500</span>
-                                        </div>
+
+                                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-white/5">
+                                    <div className="flex items-center gap-2">
+                                      <Activity className={cn("w-4 h-4", filterConfig.enabled ? "text-emerald-400" : "text-slate-400")} />
+                                      <div>
+                                        <span className="text-xs font-medium text-slate-200">Фильтр аномалий</span>
+                                        <p className="text-[10px] text-slate-500">Удаляет скачки GPS</p>
                                       </div>
                                     </div>
-                                  )}
-                                  <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                      <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                        <Activity className="w-3.5 h-3.5 text-blue-400" />
-                                        Скорость колеса лимит
-                                      </label>
-                                      <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-                                        {filterConfig.wheelSpeedLimitKmh} км/ч
-                                      </span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 mb-2">
-                                      Максимальная допустимая скорость колеса. Показания выше этого значения считаются аномальными и удаляются.
-                                    </p>
-                                    <div className="relative">
-                                      <input
-                                        type="range"
-                                        min="0"
-                                        max="300"
-                                        step="5"
-                                        value={filterConfig.wheelSpeedLimitKmh}
-                                        onChange={(e) => setFilterConfig(prev => ({ ...prev, wheelSpeedLimitKmh: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                        aria-label="Лимит скорости колеса в км/ч"
+                                    <button
+                                      onClick={() => setFilterConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                      className={cn(
+                                        "relative w-10 h-5 rounded-full transition-colors duration-200",
+                                        filterConfig.enabled ? "bg-emerald-500" : "bg-slate-600"
+                                      )}
+                                    >
+                                      <span
+                                        className={cn(
+                                          "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200",
+                                          filterConfig.enabled ? "translate-x-5" : "translate-x-0"
+                                        )}
                                       />
-                                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                                        <span>0</span>
-                                        <span>300</span>
-                                      </div>
-                                    </div>
+                                    </button>
                                   </div>
                                 </div>
-                              </>
-                            )}
-                            {!(filterConfig.enabled || hideIdlePeriods) && (
-                              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-800/50 p-3 rounded-lg">
-                                <Settings className="w-4 h-4" />
-                                <span>Включите обработку данных для настройки параметров</span>
-                              </div>
-                            )}
+                              )}
+
+                              {settingsTab === 'visualization' && (
+                                <div className="space-y-3">
+                                  <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
+                                    <ToggleChip label={i18n['speed']} active={chartToggles.speed} onClick={() => setChartToggles(p => ({...p, speed: !p.speed}))} color="primary" />
+                                    {displayData[0]?.GPSSpeed !== undefined && (
+                                      <ToggleChip label={i18n['gpsSpeed']} active={chartToggles.gpsSpeed} onClick={() => setChartToggles(p => ({...p, gpsSpeed: !p.gpsSpeed}))} color="success" />
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
+                                    <ToggleChip label={i18n['power']} active={chartToggles.power} onClick={() => setChartToggles(p => ({...p, power: !p.power}))} color="warning" />
+                                    <ToggleChip label={i18n['current']} active={chartToggles.current} onClick={() => setChartToggles(p => ({...p, current: !p.current}))} color="danger" />
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
+                                    <ToggleChip label={i18n['voltage']} active={chartToggles.voltage} onClick={() => setChartToggles(p => ({...p, voltage: !p.voltage}))} color="info" />
+                                    <ToggleChip label={i18n['temp']} active={chartToggles.temperature} onClick={() => setChartToggles(p => ({...p, temperature: !p.temperature}))} color="warning" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </div>
-                    </div>
 
                   </div>
                 </div>
@@ -1815,65 +1743,7 @@ function App() {
                     </button>
                   </div>
                   <div className="w-px h-6 bg-white/10 mx-1" />
-                  {/* Telemetry Data Toggle - integrated into controls */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowTelemetryToggles(prev => !prev)}
-                      className={cn(
-                        "px-4 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 border flex items-center gap-2 min-h-[44px]",
-                        showTelemetryToggles
-                          ? "bg-indigo-500/30 border-indigo-500/60 text-indigo-200"
-                          : "bg-slate-700/50 border-slate-600 text-slate-400 hover:bg-slate-700"
-                      )}
-                      title="Данные графика: показать/скрыть линии данных"
-                    >
-                      <Settings className={cn("w-4 h-4 transition-transform duration-200", showTelemetryToggles ? "rotate-180" : "")} />
-                      <span className="hidden sm:inline">Данные</span>
-                    </button>
-                    {/* Dropdown with telemetry toggles */}
-                    {showTelemetryToggles && (
-                      <div className="absolute top-full right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1rem)] bg-slate-900/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl z-[100] p-3 sm:p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Settings className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm font-semibold text-slate-200">Данные графика</span>
-                        </div>
-                        <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
-                          {/* Speed */}
-                          <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n['speed']} active={chartToggles.speed} onClick={() => setChartToggles(p => ({...p, speed: !p.speed}))} color="primary" />
-                            {displayData[0]?.GPSSpeed !== undefined && (
-                              <ToggleChip label={i18n['gpsSpeed']} active={chartToggles.gpsSpeed} onClick={() => setChartToggles(p => ({...p, gpsSpeed: !p.gpsSpeed}))} color="success" />
-                            )}
-                          </div>
-                          {/* Power */}
-                          <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n['power']} active={chartToggles.power} onClick={() => setChartToggles(p => ({...p, power: !p.power}))} color="warning" />
-                            <ToggleChip label={i18n['current']} active={chartToggles.current} onClick={() => setChartToggles(p => ({...p, current: !p.current}))} color="danger" />
-                            {displayData[0]?.PhaseCurrent !== undefined && (
-                              <ToggleChip label={i18n['phaseCurrent']} active={chartToggles.phaseCurrent} onClick={() => setChartToggles(p => ({...p, phaseCurrent: !p.phaseCurrent}))} color="danger" />
-                            )}
-                          </div>
-                          {/* System */}
-                          <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n['voltage']} active={chartToggles.voltage} onClick={() => setChartToggles(p => ({...p, voltage: !p.voltage}))} color="info" />
-                            <ToggleChip label={i18n['batteryPercent']} active={chartToggles.batteryLevel} onClick={() => setChartToggles(p => ({...p, batteryLevel: !p.batteryLevel}))} color="danger" />
-                            <ToggleChip label={i18n['temp']} active={chartToggles.temperature} onClick={() => setChartToggles(p => ({...p, temperature: !p.temperature}))} color="warning" />
-                            {displayData[0]?.Temp2 !== undefined && (
-                              <ToggleChip label={i18n['temp2']} active={chartToggles.temp2} onClick={() => setChartToggles(p => ({...p, temp2: !p.temp2}))} color="warning" />
-                            )}
-                          </div>
-                          {/* Torque & PWM */}
-                          <div className="flex flex-wrap items-center gap-1">
-                            {displayData[0]?.Torque !== undefined && (
-                              <ToggleChip label={i18n['torque']} active={chartToggles.torque} onClick={() => setChartToggles(p => ({...p, torque: !p.torque}))} color="info" />
-                            )}
-                            <ToggleChip label={i18n['pwm']} active={chartToggles.pwm} onClick={() => setChartToggles(p => ({...p, pwm: !p.pwm}))} color="primary" />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                                  </div>
 
                 
                 <div className="h-[450px] w-full">
@@ -2172,8 +2042,10 @@ function App() {
                 </div>
               )}
             </div>
+              </div>
+            </div>
 
-                      </>
+            </>
         ) : (
           <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl h-[500px] flex flex-col items-center justify-center text-center px-6">
             {/* Background decoration */}
