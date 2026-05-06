@@ -238,10 +238,10 @@ function App() {
   const [hideIdlePeriods, setHideIdlePeriods] = useState<boolean>(false);
 
   // Info bar state
-  const [showInfoBar, setShowInfoBar] = useState(false);
+  const [_showInfoBar, setShowInfoBar] = useState(false);
   const [infoBarFrozen, setInfoBarFrozen] = useState(false);
-  const [infoBarData, setInfoBarData] = useState<Array<{ label: string; value: number | null; color: string; unit: string }>>([]);
-  const [infoBarTimestamp, setInfoBarTimestamp] = useState<string>('');
+  const [_infoBarData, setInfoBarData] = useState<Array<{ label: string; value: number | null; color: string; unit: string }>>([]);
+  const [_infoBarTimestamp, setInfoBarTimestamp] = useState<string>('');
 
   // Load settings from localStorage on mount
   useEffect(() => {
