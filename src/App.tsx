@@ -17,8 +17,6 @@ import { parseTripData, calculateSummary, downsample, filterData, defaultFilterC
 import { loadSettings, saveSettings } from './utils/settings';
 import type { TripEntry, TripSummary } from './types';
 import { AccelerationTab } from './components/AccelerationTab';
-import { AccelerationComparison } from './components/AccelerationComparison';
-import { AccelerationTable } from './components/AccelerationTable';
 import { SettingsPanel } from './components/SettingsPanel';
 import { GPSMap } from './components/GPSMap';
 import {
@@ -29,7 +27,6 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { toPng } from 'html-to-image';
 import { ScatterPlot } from './components/ScatterPlot';
-import { ChartInfoBar } from './components/ChartInfoBar';
 import { TripOverview } from './components/TripOverview';
 import { i18n } from './i18n';
 import { useChartOptions } from './hooks/useChartOptions';
@@ -192,27 +189,9 @@ function App() {
   });
 
   // Acceleration state - extracted to useAccelerationState hook
-  const { accelerationAttempts, showIncomplete, setShowIncomplete, selectedColumns, setSelectedColumns, clearSettings } = useAccelerationState(data);
+  const { accelerationAttempts, clearSettings } = useAccelerationState(data);
 
-  // Comparison mode state
-  const [selectedAttempts, setSelectedAttempts] = useState<Set<string>>(new Set());
-
-  const toggleSelection = useCallback((attemptId: string) => {
-    setSelectedAttempts(prev => {
-      const next = new Set(prev);
-      if (next.has(attemptId)) {
-        next.delete(attemptId);
-      } else {
-        next.add(attemptId);
-      }
-      return next;
-    });
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    setSelectedAttempts(new Set());
-  }, []);
-
+  
   // Collapsed sections state
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({
     acceleration: false,
@@ -239,6 +218,7 @@ function App() {
   } = useChartState();
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if GPS data is available
   const hasGPSData = useMemo(() => {
@@ -246,21 +226,22 @@ function App() {
   }, [data]);
 
   // Panels visibility
-  const [showSettings, setShowSettings] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
 
-  // Info bar state
-  const [showInfoBar, setShowInfoBar] = useState<boolean>(true);
-  const [infoBarFrozen, setInfoBarFrozen] = useState(false);
-  const [infoBarData, setInfoBarData] = useState<{ label: string; value: number | null; color: string; unit?: string }[]>([]);
-  const [infoBarTimestamp, setInfoBarTimestamp] = useState<string>('');
-  const infoBarDataRef = useRef(infoBarData);
-  infoBarDataRef.current = infoBarData;
+  // Time filter state
+  const [timeFilter, setTimeFilter] = useState<{ startTime: string; endTime: string } | null>(null);
 
+  
   // Current time for GPS map sync
   const [currentTime, setCurrentTime] = useState<number | undefined>(undefined);
   const [filterConfig, setFilterConfig] = useState<DataFilterConfig>(defaultFilterConfig);
   const [hideIdlePeriods, setHideIdlePeriods] = useState<boolean>(false);
+
+  // Info bar state
+  const [showInfoBar, setShowInfoBar] = useState(false);
+  const [infoBarFrozen, setInfoBarFrozen] = useState(false);
+  const [infoBarData, setInfoBarData] = useState<Array<{ label: string; value: number | null; color: string; unit: string }>>([]);
+  const [infoBarTimestamp, setInfoBarTimestamp] = useState<string>('');
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -839,7 +820,7 @@ function App() {
 
   const handleFile = (file: File) => {
     if (!file.name.endsWith('.csv')) {
-      alert(i18n.t('uploadError'));
+      alert(i18n['uploadError']);
       return;
     }
     setLoading(true);
@@ -1240,9 +1221,9 @@ function App() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                {i18n.t('appTitle')}
+                {i18n['appTitle']}
               </h1>
-              <p className="text-slate-400 text-xs md:text-sm">{i18n.t('appSubtitle')}</p>
+              <p className="text-slate-400 text-xs md:text-sm">{i18n['appSubtitle']}</p>
               {datasets.length > 0 && (
                 <div className="mt-2">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1315,8 +1296,8 @@ function App() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-blue-600/20 backdrop-blur-sm pointer-events-none">
             <div className="text-center bg-slate-900/95 p-10 rounded-2xl shadow-2xl border-2 border-dashed border-blue-500/50 animate-pulse">
               <Upload className="w-20 h-20 mx-auto mb-6 text-blue-400" strokeWidth={1.5} />
-              <p className="text-3xl font-bold text-white mb-2">{i18n.t('dropCSV')}</p>
-              <p className="text-blue-400/80">{i18n.t('dropCSVSubtitle')}</p>
+              <p className="text-3xl font-bold text-white mb-2">{i18n['dropCSV']}</p>
+              <p className="text-blue-400/80">{i18n['dropCSVSubtitle']}</p>
             </div>
           </div>
         )}
@@ -1352,7 +1333,7 @@ function App() {
               <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
               <div className="absolute inset-0 w-20 h-20 border-4 border-purple-500/20 border-b-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
             </div>
-            <p className="text-slate-400 mt-6 animate-pulse font-medium">{i18n.t('parsingData')}</p>
+            <p className="text-slate-400 mt-6 animate-pulse font-medium">{i18n['parsingData']}</p>
           </div>
         ) : data.length === 0 ? (
           <>
@@ -1436,6 +1417,7 @@ function App() {
           </>
         ) : data.length > 0 && summary ? (
           <>
+            
             {/* Trip Data Section - Overview and Telemetry */}
             <div className="space-y-4 md:space-y-6">
               {showMap && hasGPSData && (
@@ -1451,12 +1433,22 @@ function App() {
                   </div>
                 </div>
               )}
-              <TripOverview
+              <TripOverview 
                 summary={filteredSummary!}
                 visibleMetrics={visibleMetrics}
-                showSettings={showSettings}
-                onSettingsToggle={() => setShowSettings(!showSettings)}
                 onVisibleMetricsChange={(key) => setVisibleMetrics(prev => ({ ...prev, [key]: !prev[key] }))}
+                onHideAll={() => {
+                  setVisibleMetrics({
+                    maxSpeed: false,
+                    avgSpeed: false,
+                    avgMovingSpeed: false,
+                    ridingTime: false,
+                    totalSamples: false,
+                    maxTorque: false,
+                    maxPhaseCurrent: false,
+                    maxTemp: false,
+                  });
+                }}
                 onFileLoad={() => {
                   const input = document.querySelector('input[type="file"]') as HTMLInputElement;
                   if (input) input.click();
@@ -1475,7 +1467,7 @@ function App() {
                       <BarChart className="w-4 h-4 text-slate-300" strokeWidth={2.5} />
                     </div>
                     <h3 className="text-base font-bold text-slate-200">
-                      {i18n.t('tripTelemetry')}
+                      {i18n['tripTelemetry']}
                     </h3>
                   </div>
 
@@ -1847,34 +1839,34 @@ function App() {
                         <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
                           {/* Speed */}
                           <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n.t('speed')} active={chartToggles.speed} onClick={() => setChartToggles(p => ({...p, speed: !p.speed}))} color="primary" />
+                            <ToggleChip label={i18n['speed']} active={chartToggles.speed} onClick={() => setChartToggles(p => ({...p, speed: !p.speed}))} color="primary" />
                             {displayData[0]?.GPSSpeed !== undefined && (
-                              <ToggleChip label={i18n.t('gpsSpeed')} active={chartToggles.gpsSpeed} onClick={() => setChartToggles(p => ({...p, gpsSpeed: !p.gpsSpeed}))} color="success" />
+                              <ToggleChip label={i18n['gpsSpeed']} active={chartToggles.gpsSpeed} onClick={() => setChartToggles(p => ({...p, gpsSpeed: !p.gpsSpeed}))} color="success" />
                             )}
                           </div>
                           {/* Power */}
                           <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n.t('power')} active={chartToggles.power} onClick={() => setChartToggles(p => ({...p, power: !p.power}))} color="warning" />
-                            <ToggleChip label={i18n.t('current')} active={chartToggles.current} onClick={() => setChartToggles(p => ({...p, current: !p.current}))} color="danger" />
+                            <ToggleChip label={i18n['power']} active={chartToggles.power} onClick={() => setChartToggles(p => ({...p, power: !p.power}))} color="warning" />
+                            <ToggleChip label={i18n['current']} active={chartToggles.current} onClick={() => setChartToggles(p => ({...p, current: !p.current}))} color="danger" />
                             {displayData[0]?.PhaseCurrent !== undefined && (
-                              <ToggleChip label={i18n.t('phaseCurrent')} active={chartToggles.phaseCurrent} onClick={() => setChartToggles(p => ({...p, phaseCurrent: !p.phaseCurrent}))} color="danger" />
+                              <ToggleChip label={i18n['phaseCurrent']} active={chartToggles.phaseCurrent} onClick={() => setChartToggles(p => ({...p, phaseCurrent: !p.phaseCurrent}))} color="danger" />
                             )}
                           </div>
                           {/* System */}
                           <div className="flex flex-wrap items-center gap-1 px-2 py-2 bg-slate-800/30 rounded-lg border border-white/5">
-                            <ToggleChip label={i18n.t('voltage')} active={chartToggles.voltage} onClick={() => setChartToggles(p => ({...p, voltage: !p.voltage}))} color="info" />
-                            <ToggleChip label={i18n.t('batteryPercent')} active={chartToggles.batteryLevel} onClick={() => setChartToggles(p => ({...p, batteryLevel: !p.batteryLevel}))} color="danger" />
-                            <ToggleChip label={i18n.t('temp')} active={chartToggles.temperature} onClick={() => setChartToggles(p => ({...p, temperature: !p.temperature}))} color="warning" />
+                            <ToggleChip label={i18n['voltage']} active={chartToggles.voltage} onClick={() => setChartToggles(p => ({...p, voltage: !p.voltage}))} color="info" />
+                            <ToggleChip label={i18n['batteryPercent']} active={chartToggles.batteryLevel} onClick={() => setChartToggles(p => ({...p, batteryLevel: !p.batteryLevel}))} color="danger" />
+                            <ToggleChip label={i18n['temp']} active={chartToggles.temperature} onClick={() => setChartToggles(p => ({...p, temperature: !p.temperature}))} color="warning" />
                             {displayData[0]?.Temp2 !== undefined && (
-                              <ToggleChip label={i18n.t('temp2')} active={chartToggles.temp2} onClick={() => setChartToggles(p => ({...p, temp2: !p.temp2}))} color="warning" />
+                              <ToggleChip label={i18n['temp2']} active={chartToggles.temp2} onClick={() => setChartToggles(p => ({...p, temp2: !p.temp2}))} color="warning" />
                             )}
                           </div>
                           {/* Torque & PWM */}
                           <div className="flex flex-wrap items-center gap-1">
                             {displayData[0]?.Torque !== undefined && (
-                              <ToggleChip label={i18n.t('torque')} active={chartToggles.torque} onClick={() => setChartToggles(p => ({...p, torque: !p.torque}))} color="info" />
+                              <ToggleChip label={i18n['torque']} active={chartToggles.torque} onClick={() => setChartToggles(p => ({...p, torque: !p.torque}))} color="info" />
                             )}
-                            <ToggleChip label={i18n.t('pwm')} active={chartToggles.pwm} onClick={() => setChartToggles(p => ({...p, pwm: !p.pwm}))} color="primary" />
+                            <ToggleChip label={i18n['pwm']} active={chartToggles.pwm} onClick={() => setChartToggles(p => ({...p, pwm: !p.pwm}))} color="primary" />
                           </div>
                         </div>
                       </div>
@@ -1882,15 +1874,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* Chart Info Bar - positioned inside controls container */}
-                <ChartInfoBar
-                  data={infoBarData}
-                  timestamp={infoBarTimestamp}
-                  isVisible={showInfoBar}
-                  isFrozen={infoBarFrozen}
-                  onToggleFreeze={() => setInfoBarFrozen(prev => !prev)}
-                />
-
+                
                 <div className="h-[450px] w-full">
                   {chartView === 'line' ? (
                     <Line
@@ -1991,7 +1975,7 @@ function App() {
                           }
                         },
                         onHover: throttle((_event: unknown, activeElements: unknown[]) => {
-                          if (!activeElements.length || infoBarFrozen) return;
+                          if (!activeElements.length) return;
 
                           const dataIndex = (activeElements as { index: number }[])[0].index;
                           const dataPoint = displayData[dataIndex];
@@ -2017,6 +2001,9 @@ function App() {
                             second: '2-digit'
                           });
 
+                          // Update info bar state
+                          setShowInfoBar(true);
+                          setInfoBarFrozen(true);
                           setInfoBarData(newData);
                           setInfoBarTimestamp(timestamp);
                         }, 50),
@@ -2044,6 +2031,9 @@ function App() {
                             second: '2-digit'
                           });
 
+                          // Update info bar state
+                          setShowInfoBar(true);
+                          setInfoBarFrozen(true);
                           setInfoBarData(newData);
                           setInfoBarTimestamp(timestamp);
                         }
@@ -2182,70 +2172,7 @@ function App() {
               )}
             </div>
 
-            {/* Comparison Section */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg mt-6">
-              <button
-                onClick={() => toggleSection('comparison')}
-                className="w-full p-3 border-b border-white/10 flex items-center justify-center gap-3 hover:bg-white/5 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-slate-300" strokeWidth={2.5} />
-                  <span className="text-base font-bold text-slate-200">
-                    Сравнение ускорений
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearSelection();
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 border cursor-pointer",
-                      selectedAttempts.size === 0
-                        ? "bg-slate-700/30 border-slate-600 text-slate-500 cursor-not-allowed"
-                        : "bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30"
-                    )}
-                  >
-                    Очистить выбор
-                  </div>
-                  {collapsedSections.comparison ? <ChevronRight className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                </div>
-              </button>
-              {!collapsedSections.comparison && (
-                <div className="p-5">
-                  <AccelerationComparison
-                    accelerationAttempts={accelerationAttempts}
-                    selectedAttempts={selectedAttempts}
-                    data={data}
-                  />
-                  <div className="mt-6">
-                    <AccelerationTable
-                      accelerationAttempts={accelerationAttempts}
-                      showIncomplete={showIncomplete}
-                      selectedColumns={selectedColumns}
-                      onShowIncompleteToggle={() => setShowIncomplete(prev => !prev)}
-                      onColumnToggle={(column) => {
-                        setSelectedColumns(prev => {
-                          const next = new Set(prev);
-                          if (next.has(column)) {
-                            next.delete(column);
-                          } else {
-                            next.add(column);
-                          }
-                          return next;
-                        });
-                      }}
-                      onSelectionToggle={toggleSelection}
-                      selectedAttempts={selectedAttempts}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+                      </>
         ) : (
           <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl h-[500px] flex flex-col items-center justify-center text-center px-6">
             {/* Background decoration */}
@@ -2258,42 +2185,48 @@ function App() {
                 <Upload className="w-16 h-16 text-blue-400" strokeWidth={1.5} />
               </div>
               <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                {i18n.t('readyToAnalyze')}
+                {i18n['readyToAnalyze']}
               </h2>
               <p className="text-slate-400 max-w-md mb-4">
-                {i18n.t('uploadPrompt')}
+                {i18n['uploadPrompt']}
               </p>
               
               {/* Demo file button */}
-              <button
-                onClick={async () => {
+              <TripOverview 
+                summary={filteredSummary!}
+                visibleMetrics={visibleMetrics}
+                onVisibleMetricsChange={(key) => setVisibleMetrics(prev => ({ ...prev, [key]: !prev[key] }))}
+                onHideAll={() => {
+                  setVisibleMetrics({
+                    maxSpeed: false,
+                    avgSpeed: false,
+                    avgMovingSpeed: false,
+                    ridingTime: false,
+                    totalSamples: false,
+                    maxTorque: true,
+                    maxPhaseCurrent: false,
+                    maxTemp: false,
+                  });
+                }}
+                onFileLoad={() => fileInputRef.current?.click()}
+                onShare={async () => {
                   try {
-                    setLoading(true);
-                    setFileName('demo-trip.csv');
-                    const response = await fetch('/demo-trip.csv');
-                    const text = await response.text();
-                    const parsedData = parseTripData(text);
-                    setData(parsedData);
-                    setSummary(calculateSummary(parsedData));
-                    if (parsedData.length > 0) {
-                      const timestamps = parsedData.map(e => e.timestamp);
-                      setTimeRange({
-                        start: Math.min(...timestamps),
-                        end: Math.max(...timestamps),
-                      });
-                    }
-                    setLoading(false);
+                    const dataUrl = await toPng(chartContainerRef.current!, {
+                      backgroundColor: '#0f172a',
+                      style: {
+                        padding: '20px'
+                      }
+                    });
+                    const link = document.createElement('a');
+                    link.download = `windfighter-telemetry-${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = dataUrl;
+                    link.click();
                   } catch (error) {
-                    console.error('Failed to load demo:', error);
-                    alert('Ошибка загрузки демо файла');
-                    setLoading(false);
+                    console.error('Failed to export chart:', error);
+                    alert('Ошибка при экспорте графика');
                   }
                 }}
-                className="mb-6 px-5 py-2.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 rounded-xl border border-emerald-500/40 text-emerald-300 text-sm font-medium transition-all duration-200 flex items-center gap-2"
-              >
-                <Activity className="w-4 h-4" />
-                Загрузить демо поездку
-              </button>
+              />
             </div>
           </div>
         )}
@@ -2309,6 +2242,8 @@ function App() {
         setChartView={setChartView}
         hideIdlePeriods={hideIdlePeriods}
         setHideIdlePeriods={setHideIdlePeriods}
+        timeFilter={timeFilter}
+        setTimeFilter={setTimeFilter}
       />
     </div>
   );
