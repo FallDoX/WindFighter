@@ -1,7 +1,7 @@
 {
   "name": "wfeucapp",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "WindFighter EUC - Professional Electric Unicycle Telemetry Analytics Platform",
   "author": "Trip Log Analyzer Team",
   "type": "module",
